@@ -33,26 +33,22 @@ else
     echo "  Toegevoegd: $CRON_CMD"
 fi
 
-# Systemd service voor API server
-echo ""
-echo "→ API server service installeren..."
-if [ -f /etc/systemd/system/nino-server.service ]; then
-    echo "  Service bestaat al, overslaan."
-else
-    # Pas paden aan voor huidige installatie
-    sed "s|/home/pi/nino|$SCRIPT_DIR|g" "$SCRIPT_DIR/nino-server.service" | \
-        sed "s|User=pi|User=$(whoami)|g" | \
-        sudo tee /etc/systemd/system/nino-server.service > /dev/null
-    sudo systemctl daemon-reload
-    sudo systemctl enable nino-server
-    sudo systemctl start nino-server
-    echo "  Service gestart op poort 8099"
-fi
-
-# Eerste data ophalen
+# Eerste data ophalen (moet vóór de server starten)
 echo ""
 echo "→ Eerste data ophalen..."
 "$VENV_DIR/bin/python" "$SCRIPT_DIR/nino_monitor.py"
+
+# Systemd service voor API server
+echo ""
+echo "→ API server service installeren..."
+# Altijd bijwerken zodat paden kloppen
+sed "s|/home/pi/nino|$SCRIPT_DIR|g" "$SCRIPT_DIR/nino-server.service" | \
+    sed "s|User=pi|User=$(whoami)|g" | \
+    sudo tee /etc/systemd/system/nino-server.service > /dev/null
+sudo systemctl daemon-reload
+sudo systemctl enable nino-server
+sudo systemctl restart nino-server
+echo "  Service gestart op poort 8099"
 
 echo ""
 echo "=== Installatie compleet ==="
