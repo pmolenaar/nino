@@ -157,7 +157,7 @@ All data comes from [NOAA Climate Prediction Center](https://www.cpc.ncep.noaa.g
 ## Credits
 
 - **[Chris Gloninger](https://chrisgloninger.substack.com/)** — meteorologist and author of the original analysis that inspired this project
-- [Reddit discussion on r/climate](https://reddit.com/r/climate) — *(link will be updated once posted)*
+- [Reddit discussion on r/climate](https://www.reddit.com/r/climate/comments/1sqeg6r/comment/oh964iy/)
 
 ## License
 
