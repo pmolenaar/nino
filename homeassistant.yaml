@@ -1,0 +1,94 @@
+# ============================================================
+# Home Assistant configuratie voor El Niño Monitor
+# ============================================================
+#
+# Voeg onderstaande toe aan je configuration.yaml
+# Pas het IP-adres aan naar dat van je Raspberry Pi.
+#
+# Na toevoegen: Developer Tools → YAML → REST entities herladen
+# ============================================================
+
+rest:
+  - resource: http://RASPBERRY_PI_IP:8099/api/state
+    scan_interval: 3600  # elk uur checken (data wijzigt wekelijks)
+    sensor:
+      - name: "El Niño Voorspelling"
+        value_template: "{{ value_json.prediction_status }}"
+        json_attributes:
+          - prediction_score
+          - prediction_reasons
+          - last_update
+          - previous_update
+          - alerts
+
+      - name: "Niño 3.4 Anomalie"
+        value_template: "{{ value_json.nino34_ssta }}"
+        unit_of_measurement: "°C"
+        json_attributes:
+          - nino34_sst
+          - nino34_mutation
+          - nino34_trend
+          - week
+          - history_nino34
+
+      - name: "Niño 3.4 Mutatie"
+        value_template: "{{ value_json.nino34_mutation }}"
+        unit_of_measurement: "°C"
+
+      - name: "Ocean Heat Content"
+        value_template: "{{ value_json.heat_content }}"
+        unit_of_measurement: "°C"
+
+      - name: "Passaatwinden Centraal Pacific"
+        value_template: "{{ value_json.trade_wind_cpac }}"
+        unit_of_measurement: "m/s"
+
+      - name: "SOI Index"
+        value_template: "{{ value_json.soi }}"
+
+
+# ============================================================
+# Dashboard card voorbeeld (kopieer naar een Lovelace dashboard)
+# ============================================================
+#
+# type: entities
+# title: "El Niño Monitor"
+# entities:
+#   - entity: sensor.el_nino_voorspelling
+#     name: "Voorspelling status"
+#     icon: mdi:weather-hurricane
+#   - entity: sensor.nino_3_4_anomalie
+#     name: "Niño 3.4"
+#     icon: mdi:thermometer
+#   - entity: sensor.nino_3_4_mutatie
+#     name: "Mutatie t.o.v. vorige week"
+#     icon: mdi:delta
+#   - entity: sensor.ocean_heat_content
+#     name: "Ocean Heat Content"
+#     icon: mdi:waves
+#   - entity: sensor.passaatwinden_centraal_pacific
+#     name: "Passaatwinden"
+#     icon: mdi:weather-windy
+#   - entity: sensor.soi_index
+#     name: "SOI"
+#     icon: mdi:chart-line
+#
+# ── Markdown card voor details ──
+#
+# type: markdown
+# title: "El Niño Details"
+# content: >
+#   **Status:** {{ states('sensor.el_nino_voorspelling') }}
+#   (score: {{ state_attr('sensor.el_nino_voorspelling', 'prediction_score') }}/9)
+#
+#   **Niño 3.4:** {{ states('sensor.nino_3_4_anomalie') }}°C
+#   {{ state_attr('sensor.nino_3_4_anomalie', 'nino34_trend') }}
+#   (mutatie: {{ states('sensor.nino_3_4_mutatie') }}°C)
+#
+#   **Laatste update:** {{ state_attr('sensor.el_nino_voorspelling', 'last_update') }}
+#
+#   {% set reasons = state_attr('sensor.el_nino_voorspelling', 'prediction_reasons') %}
+#   {% if reasons %}
+#   **Redenen:**
+#   {% for r in reasons %}- {{ r }}
+#   {% endfor %}{% endif %}

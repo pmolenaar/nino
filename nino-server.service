@@ -1,0 +1,14 @@
+[Unit]
+Description=El Niño Monitor API
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/nino
+ExecStart=/home/pi/nino/.venv/bin/python /home/pi/nino/nino_server.py --port 8099
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

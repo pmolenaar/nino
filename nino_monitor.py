@@ -351,6 +351,128 @@ def generate_report(data: dict, history: list[dict], alerts: list[str]) -> str:
 
 
 # ---------------------------------------------------------------------------
+# State voor Home Assistant
+# ---------------------------------------------------------------------------
+
+def determine_prediction_status(data: dict) -> str:
+    """Bepaal of de huidige data de voorspelling ondersteunt.
+
+    Scoring:
+      - Niño 3.4 SSTA stijgt / is positief
+      - Subsurface heat content hoog
+      - Passaatwinden verzwakken (negatieve anomalie)
+      - SOI negatief
+    """
+    score = 0
+    reasons = []
+
+    nino34 = data.get("nino34_ssta")
+    if nino34 is not None:
+        if nino34 >= 1.5:
+            score += 3
+            reasons.append(f"Niño 3.4 sterk positief ({nino34:+.1f}°C)")
+        elif nino34 >= 0.5:
+            score += 2
+            reasons.append(f"Niño 3.4 positief ({nino34:+.1f}°C)")
+        elif nino34 > 0:
+            score += 1
+            reasons.append(f"Niño 3.4 licht positief ({nino34:+.1f}°C)")
+        else:
+            reasons.append(f"Niño 3.4 negatief ({nino34:+.1f}°C)")
+
+    hc = data.get("heat_content_130e_80w")
+    if hc is not None:
+        if hc >= 1.0:
+            score += 2
+            reasons.append(f"Heat content hoog ({hc:+.2f}°C)")
+        elif hc >= 0.5:
+            score += 1
+            reasons.append(f"Heat content matig ({hc:+.2f}°C)")
+
+    cpac = data.get("cpac_anomaly")
+    if cpac is not None:
+        if cpac < -1.0:
+            score += 2
+            reasons.append(f"Passaatwinden sterk verzwakt ({cpac:+.1f} m/s)")
+        elif cpac < 0:
+            score += 1
+            reasons.append(f"Passaatwinden licht verzwakt ({cpac:+.1f} m/s)")
+
+    soi = data.get("soi")
+    if soi is not None:
+        if soi < -1.0:
+            score += 2
+            reasons.append(f"SOI sterk negatief ({soi:+.1f})")
+        elif soi < 0:
+            score += 1
+            reasons.append(f"SOI licht negatief ({soi:+.1f})")
+
+    # max score = 9
+    if score >= 7:
+        status = "Sterk ondersteund"
+    elif score >= 4:
+        status = "Gedeeltelijk ondersteund"
+    elif score >= 2:
+        status = "Vroege signalen"
+    else:
+        status = "Nog niet ondersteund"
+
+    return status, score, reasons
+
+
+def write_state(data: dict, history: list[dict], alerts: list[str], data_dir: Path):
+    """Schrijf state.json voor Home Assistant endpoint."""
+    state_file = data_dir / "state.json"
+
+    # Lees vorige state voor mutatie-detectie
+    prev_nino34 = None
+    prev_date = None
+    if state_file.exists():
+        try:
+            with open(state_file) as f:
+                prev = json.load(f)
+            prev_nino34 = prev.get("nino34_ssta")
+            prev_date = prev.get("last_update")
+        except (json.JSONDecodeError, KeyError):
+            pass
+
+    nino34 = data.get("nino34_ssta")
+    mutation = None
+    if prev_nino34 is not None and nino34 is not None:
+        diff = nino34 - prev_nino34
+        mutation = round(diff, 2)
+
+    status, score, reasons = determine_prediction_status(data)
+
+    nino34_values = [float(h["nino34_ssta"]) for h in history if h.get("nino34_ssta")]
+
+    state = {
+        "last_update": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+        "previous_update": prev_date,
+        "prediction_status": status,
+        "prediction_score": score,
+        "prediction_reasons": reasons,
+        "nino34_ssta": nino34,
+        "nino34_sst": data.get("nino34_sst"),
+        "nino34_mutation": mutation,
+        "nino34_trend": trend_arrow(nino34_values),
+        "nino12_ssta": data.get("nino12_ssta"),
+        "nino3_ssta": data.get("nino3_ssta"),
+        "nino4_ssta": data.get("nino4_ssta"),
+        "heat_content": data.get("heat_content_130e_80w"),
+        "trade_wind_cpac": data.get("cpac_anomaly"),
+        "trade_wind_wpac": data.get("wpac_anomaly"),
+        "soi": data.get("soi"),
+        "week": data.get("week"),
+        "alerts": alerts,
+        "history_nino34": nino34_values[-8:],
+    }
+
+    with open(state_file, "w") as f:
+        json.dump(state, f, indent=2, ensure_ascii=False)
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -433,6 +555,9 @@ def run():
     with open(report_file, "w") as f:
         f.write(report)
     print(f"\nRapport opgeslagen: {report_file}")
+
+    # State JSON voor Home Assistant
+    write_state(combined, history, alerts, data_dir)
 
     # Return exit code 1 als er critical alerts zijn
     if any("CRITICAL" in a for a in alerts):
