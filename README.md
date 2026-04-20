@@ -2,7 +2,7 @@
 
 Lightweight Python tool that tracks ENSO data points from NOAA to monitor the development of a potentially record-breaking El Niño in 2026. Runs on a Raspberry Pi with weekly cron jobs and includes a Home Assistant integration.
 
-Based on [this analysis](https://chrisgloninger.substack.com/p/something-is-brewing-in-the-pacific) predicting a Niño 3.4 anomaly of ~2.5°C — comparable to the 1997 and 2015 Super El Niños, but on top of a baseline already 1.4-1.5°C above preindustrial levels.
+Based on the analysis ["Something is brewing in the Pacific"](https://chrisgloninger.substack.com/p/something-is-brewing-in-the-pacific) by [Chris Gloninger](https://chrisgloninger.substack.com/), predicting a Niño 3.4 anomaly of ~2.5°C — comparable to the 1997 and 2015 Super El Niños, but on top of a baseline already 1.4-1.5°C above preindustrial levels.
 
 ## What it tracks
 
@@ -153,6 +153,11 @@ Configurable in `config.json`:
 ## Data sources
 
 All data comes from [NOAA Climate Prediction Center](https://www.cpc.ncep.noaa.gov/data/indices/) public feeds. No API key required.
+
+## Credits
+
+- **[Chris Gloninger](https://chrisgloninger.substack.com/)** — meteorologist and author of the original analysis that inspired this project
+- [Reddit discussion on r/climate](https://reddit.com/r/climate) — *(link will be updated once posted)*
 
 ## License
 
